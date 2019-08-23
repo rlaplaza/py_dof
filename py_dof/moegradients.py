@@ -1,7 +1,7 @@
 import numpy as np
 from py_dof.wrappyscf import solver as runscf
 
-def calc_moe_gradients_4p(mole,one_dm: np.ndarray, mf, occs, energies, maxstep=0.0001, verbose=0):
+def calc_moe_gradients_4p(mole,one_dm: np.ndarray, mf, occs, energies, maxstep=0.00001, verbose=0):
     """Calculate gradients of MO energies with respect to nuclear displacement.
     Currently uses an 4-point stencil finite-difference approach.
 
@@ -66,7 +66,7 @@ def calc_moe_gradients_4p(mole,one_dm: np.ndarray, mf, occs, energies, maxstep=0
     return grad_moe
 
 
-def calc_moe_gradients_2p(mole,one_dm: np.ndarray, mf, occs, energies, maxstep=0.00005, verbose=0):
+def calc_moe_gradients_2p(mole,one_dm: np.ndarray, mf, occs, energies, maxstep=0.000005, verbose=0):
     """Calculate gradients of MO energies with respect to nuclear displacement.
     Currently uses an 2-point stencil finite-difference approach.
 
@@ -260,7 +260,7 @@ def zmat2cart(zmat):
     return cart_atoms
 
 
-def calc_moe_gradients_i4p(mole,one_dm: np.ndarray, mf, occs, energies, maxstep=0.0001, verbose=0):
+def calc_moe_gradients_i4p(mole,one_dm: np.ndarray, mf, occs, energies, maxstep=0.00001, verbose=0):
     """Calculate gradients of MO energies with respect to nuclear displacement.
     Currently uses an improved 4-point stencil finite-difference approach.
 
@@ -322,6 +322,77 @@ def calc_moe_gradients_i4p(mole,one_dm: np.ndarray, mf, occs, energies, maxstep=
             if verbose > 2 : print('New coordinate: {0}'.format(mole_copy.atom[i][1][j]))
             energies_mm = runscf(mole_copy,one_dm,mf,verbose)
             grad_moe[i][:,j] = 9*( energies_p - energies_m)/(16*t) - (energies_pp - energies_mm)/(48*t)
+    return grad_moe
+
+def calc_moe_gradients_i6p(mole,one_dm: np.ndarray, mf, occs, energies, maxstep=0.00001, verbose=0):
+    """Calculate gradients of MO energies with respect to nuclear displacement.
+    Currently uses an improved 6-point stencil finite-difference approach.
+    This is obviously extremely expensive, but also extremely robust.
+
+    Parameters
+    ----------
+    mole
+        A PySCF mole object.
+    one_dm
+        One-particle density matrix understood by IOdata 
+        projected and formatted in a PySCF-compatible way 
+        (single 2d array)
+    mf
+        A PySCF mean field object. Its only use is method specification.
+    occs
+        Occupation numbers formatted in a PySCF-compatible way 
+        (single 1d array)
+    energies
+        MO energies formatted in a PySCF-compatible way 
+        (single 1d array)
+    maxstep
+        Maximum distance (Bohr) that each nuclei will be displaced
+        in every cartesian dimension. A small value of 0.0001-0.00001 is recommended.
+    verb_lvl
+        Verbosity level integer flag.
+
+    Returns
+    -------
+    grad_moe
+        Differences in the MO energies (final-beginning)
+        with respect to the displacement.
+
+    Raises
+    ------
+    moegerror 
+        If an unrestricted molecule is input.
+
+    """
+    if len(one_dm) == 2 :
+        raise moegerror('MO energy gradients are only available for restricted systems.')
+    grad_moe = [None] * mole.natm 
+    t=maxstep/5
+    for i in range(0,mole.natm) :
+        grad_moe[i] = np.zeros((energies.size,3)) # This is a massive object
+        if verbose > 1 : print('Atom being displaced: {0}'.format(mole.atom[i]))
+        if verbose > 1 : print('Max step size: {0}'.format(maxstep))
+        for j in range(0,3):
+            if verbose > 2 : print('Original coordinate: {0}'.format(mole.atom[i][1][j]))
+            mole_copy = mole.copy()
+            mole_copy.atom[i][1][j] = mole.atom[i][1][j] + 5*t
+            if verbose > 2 : print('New coordinate: {0}'.format(mole_copy.atom[i][1][j]))
+            energies_ppp = runscf(mole_copy,one_dm,mf,verbose)
+            mole_copy.atom[i][1][j] = mole.atom[i][1][j] + 3*t
+            if verbose > 2 : print('New coordinate: {0}'.format(mole_copy.atom[i][1][j]))
+            energies_pp = runscf(mole_copy,one_dm,mf,verbose)
+            mole_copy.atom[i][1][j] = mole.atom[i][1][j] + t
+            if verbose > 2 : print('New coordinate: {0}'.format(mole_copy.atom[i][1][j]))
+            energies_p = runscf(mole_copy,one_dm,mf,verbose)
+            mole_copy.atom[i][1][j] = mole.atom[i][1][j] - t
+            if verbose > 2 : print('New coordinate: {0}'.format(mole_copy.atom[i][1][j]))
+            energies_m = runscf(mole_copy,one_dm,mf,verbose)
+            mole_copy.atom[i][1][j] = mole.atom[i][1][j] - 3*t
+            if verbose > 2 : print('New coordinate: {0}'.format(mole_copy.atom[i][1][j]))
+            energies_mm = runscf(mole_copy,one_dm,mf,verbose)
+            mole_copy.atom[i][1][j] = mole.atom[i][1][j] - 5*t
+            if verbose > 2 : print('New coordinate: {0}'.format(mole_copy.atom[i][1][j]))
+            energies_mmm = runscf(mole_copy,one_dm,mf,verbose)
+            grad_moe[i][:,j] = 75*( energies_p - energies_m)/(64*2*t) - 25*(energies_pp - energies_mm)/(384*2*t) + 3*(energies_ppp - energies_mmm)/(640*2*t)
     return grad_moe
 
 
