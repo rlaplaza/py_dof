@@ -2,6 +2,13 @@ import numpy as np
 from py_dof.wrappyscf import solver as runscf
 
 
+class moegerror(Exception):
+    """ Exception class for errors in the moegradients module.
+    It covers two possible problems: an unrestricted wavefunction being passed 
+    OR gradients not self-consistent.
+    """
+
+
 def calc_moe_gradients_4p(
     mole, one_dm: np.ndarray, mf, occs, energies, maxstep=0.00001, verbose=0
 ):
@@ -551,7 +558,7 @@ def calc_moe_gradients_np(
     Will start with an initial maxtep and the low cost 2-point formula,
     then check against higher order formulae until convergence is reached;
     if unsuccessful the maxstep variable will be decreased and the show
-    will go on. The reduction will be by two orders of magnitude max.
+    will go on. The reduction will be by three orders of magnitude max.
     This is obviously extremely expensive, but basically should always converge
     to the appropiate solution in molecular systems.
     Could be made much more efficient by cacheing some of the displacements.
@@ -601,7 +608,7 @@ def calc_moe_gradients_np(
     for i in range(0, mole.natm):
         grads1[i] = np.zeros((energies.size, 3))  # These are massive objects
         grads2[i] = np.zeros((energies.size, 3))
-    decr = [1, 5, 10, 20, 100]
+    decr = [1, 10, 100, 1000]
     for i in decr:
         step = imaxstep / float(i)
         grads1 = calc_moe_gradients_2p(
