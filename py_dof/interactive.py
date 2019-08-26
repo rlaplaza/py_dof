@@ -1,5 +1,6 @@
 import numpy as np
 from py_dof.moegradients import *
+from py_dof.wrappyscf import *
 
 
 def print_imoe_gradients_4p(
