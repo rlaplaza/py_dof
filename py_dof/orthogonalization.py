@@ -1,12 +1,15 @@
 import numpy as np
 
+
 class OrthogonalizationError(Exception):
     """ Exception class for errors in the orthogonalization module.
     """
+
     pass
 
+
 def eigh(matrix, threshold=1e-10):
-    ''' Returns eigenvalues and eigenvectors of a Hermitian matrix where the
+    """ Returns eigenvalues and eigenvectors of a Hermitian matrix where the
     eigenvectors (and eigenvalues) with eigenvalues less than the threshold are
     removed.
     Parameters
@@ -29,27 +32,40 @@ def eigh(matrix, threshold=1e-10):
     NOTE
     ----
     This code mainly uses numpy.eigh
-    '''
+    """
     if not isinstance(matrix, np.ndarray):
-        raise OrthogonalizationError('Unsupported matrix type, {0}'.format(type(matrix)))
+        raise OrthogonalizationError(
+            "Unsupported matrix type, {0}".format(type(matrix))
+        )
     if len(matrix.shape) != 2 or matrix.shape[0] != matrix.shape[1]:
-        raise OrthogonalizationError('Unsupported matrix shape, {0}'.format(matrix.shape))
+        raise OrthogonalizationError(
+            "Unsupported matrix shape, {0}".format(matrix.shape)
+        )
     eigval, eigvec = np.linalg.eigh(matrix)
     # discard eigenvalues less than threshold
     kept_indices = np.abs(eigval) > threshold
-    if np.sum(-1*kept_indices) > 0:
-        print(('WARNING: Discarded {0} eigenvalues (threshold= {1}):\n{2}'
-               ''.format(sum(-1*kept_indices), threshold, eigval[-1*kept_indices])))
+    if np.sum(-1 * kept_indices) > 0:
+        print(
+            (
+                "WARNING: Discarded {0} eigenvalues (threshold= {1}):\n{2}"
+                "".format(sum(-1 * kept_indices), threshold, eigval[-1 * kept_indices])
+            )
+        )
     if np.any(eigval < -threshold):
-        print(('WARNING: {0} eigenvalues are quite negative:\n{1}'
-               ''.format(np.sum(eigval<-threshold), eigval[eigval<-threshold])))
+        print(
+            (
+                "WARNING: {0} eigenvalues are quite negative:\n{1}"
+                "".format(np.sum(eigval < -threshold), eigval[eigval < -threshold])
+            )
+        )
     eigval, eigvec = eigval[kept_indices], eigvec[:, kept_indices]
     # sort it by decreasing eigenvalue
-    sorted_indices = np.argsort(eigval, kind='quicksort')[::-1]
+    sorted_indices = np.argsort(eigval, kind="quicksort")[::-1]
     return eigval[sorted_indices], eigvec[:, sorted_indices]
 
+
 def svd(matrix, threshold=1e-10):
-    ''' Returns singular values and vectors with singular values greater than
+    """ Returns singular values and vectors with singular values greater than
     threshold
     Parameters
     ----------
@@ -73,20 +89,32 @@ def svd(matrix, threshold=1e-10):
     NOTE
     ----
     This code uses numpy.linalg.svd
-    '''
+    """
     if not isinstance(matrix, np.ndarray):
-        raise OrthogonalizationError('Unsupported matrix type, {0}'.format(type(matrix)))
+        raise OrthogonalizationError(
+            "Unsupported matrix type, {0}".format(type(matrix))
+        )
     if len(matrix.shape) != 2:
-        raise OrthogonalizationError('Unsupported matrix shape, {0}'.format(matrix.shape))
+        raise OrthogonalizationError(
+            "Unsupported matrix shape, {0}".format(matrix.shape)
+        )
     u, sigma, vdagger = np.linalg.svd(matrix)
     # discard eigenvalues less than threshold
     kept_indices = sigma > threshold
-    if np.sum(-1*kept_indices) > 0:
-        print(('WARNING: Discarded {0} eigenvalues (threshold= {1}):\n{2}'
-               ''.format(sum(-1*kept_indices), threshold, sigma[-1*kept_indices])))
-    u, sigma, vdagger = u[:, kept_indices], sigma[kept_indices], vdagger[kept_indices, :]
+    if np.sum(-1 * kept_indices) > 0:
+        print(
+            (
+                "WARNING: Discarded {0} eigenvalues (threshold= {1}):\n{2}"
+                "".format(sum(-1 * kept_indices), threshold, sigma[-1 * kept_indices])
+            )
+        )
+    u, sigma, vdagger = (
+        u[:, kept_indices],
+        sigma[kept_indices],
+        vdagger[kept_indices, :],
+    )
     # sort it by decreasing singular
-    sorted_indices = np.argsort(sigma, kind='quicksort')[::-1]
+    sorted_indices = np.argsort(sigma, kind="quicksort")[::-1]
     return u[:, sorted_indices], sigma[sorted_indices], vdagger[sorted_indices, :]
 
 
@@ -116,13 +144,19 @@ def power_symmetric(matrix, k, threshold_eig=1e-10, threshold_symm=1e-10):
         If the power is a fraction and the any eigenvalues are negative
     """
     if not isinstance(matrix, np.ndarray):
-        raise OrthogonalizationError('Unsupported matrix type, {0}'.format(type(matrix)))
+        raise OrthogonalizationError(
+            "Unsupported matrix type, {0}".format(type(matrix))
+        )
     if len(matrix.shape) != 2 or matrix.shape[0] != matrix.shape[1]:
-        raise OrthogonalizationError('Unsupported matrix shape, {0}'.format(matrix.shape))
-    if np.max(np.abs(matrix.T-matrix)) > threshold_symm:
-        raise OrthogonalizationError('Matrix is not symmetric')
+        raise OrthogonalizationError(
+            "Unsupported matrix shape, {0}".format(matrix.shape)
+        )
+    if np.max(np.abs(matrix.T - matrix)) > threshold_symm:
+        raise OrthogonalizationError("Matrix is not symmetric")
     eigval, eigvec = eigh(matrix, threshold=threshold_eig)
-    if k%1 != 0 and np.any(eigval < 0):
-        raise OrthogonalizationError('Fractional power of negative eigenvalues.\
-        Imaginary numbers not supported.')
-    return (eigvec*(eigval**k)).dot(eigvec.T)
+    if k % 1 != 0 and np.any(eigval < 0):
+        raise OrthogonalizationError(
+            "Fractional power of negative eigenvalues.\
+        Imaginary numbers not supported."
+        )
+    return (eigvec * (eigval ** k)).dot(eigvec.T)
