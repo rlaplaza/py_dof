@@ -608,7 +608,7 @@ def calc_moe_gradients_np(
     for j in range(0, mole.natm):
         grads1[j] = np.zeros((energies.size, 3))  # These are massive objects
         grads2[j] = np.zeros((energies.size, 3))
-    d = [1, 1.25, 2.5, 3.75, 5, 10, 100]
+    d = [1, 5, 10, 25, 100, 250, 1000]
     check_mo = int(2 * np.count_nonzero(occs))
     for i in d:
         step = imaxstep / float(i)
