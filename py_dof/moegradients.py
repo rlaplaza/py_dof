@@ -84,7 +84,7 @@ def calc_moe_gradients_4p(
             grad_moe[i][:, j] = (
                 energies_mm + 8 * energies_p - energies_pp - 8 * energies_m
             ) / (12 * h)
-    return grad_moe
+    return np.asarray(grad_moe)
 
 
 def calc_moe_gradients_2p(
@@ -151,7 +151,7 @@ def calc_moe_gradients_2p(
                 print("New coordinate: {0}".format(mole_copy.atom[i][1][j]))
             energies_m = runscf(mole_copy, one_dm, mf, verbose)
             grad_moe[i][:, j] = (energies_p - energies_m) / (2 * h)
-    return grad_moe
+    return np.asarray(grad_moe)
 
 
 def internal_coordinates(mole):
@@ -370,7 +370,7 @@ def calc_moe_gradients_i4p(
             grad_moe[i][:, j] = 9 * (energies_p - energies_m) / (16 * t) - (
                 energies_pp - energies_mm
             ) / (48 * t)
-    return grad_moe
+    return np.asarray(grad_moe)
 
 
 def calc_moe_gradients_i6p(
@@ -459,7 +459,7 @@ def calc_moe_gradients_i6p(
                 - 25 * (energies_pp - energies_mm) / (384 * 2 * t)
                 + 3 * (energies_ppp - energies_mmm) / (640 * 2 * t)
             )
-    return grad_moe
+    return np.asarray(grad_moe)
 
 
 def calc_moe_gradients_6p(
@@ -548,7 +548,7 @@ def calc_moe_gradients_6p(
                 - 3 * (energies_pp - energies_mm) / (20 * h)
                 + 3 * (energies_ppp - energies_mmm) / (4 * h)
             )
-    return grad_moe
+    return np.asarray(grad_moe)
 
 
 def calc_moe_gradients_np(
@@ -621,12 +621,12 @@ def calc_moe_gradients_np(
             rtol=1e-4,
             atol=1e-6,
         ):
-            return grads1
+            return np.asarray(grads1)
         grads2 = calc_moe_gradients_4p(
             mole, one_dm, mf, occs, energies, maxstep=step, verbose=verbose
         )
         if np.allclose(np.asarray(grads1), np.asarray(grads2), rtol=1e-4, atol=1e-6):
-            return grads2
+            return np.asarray(grads2)
         else:
             grads1 = calc_moe_gradients_i4p(
                 mole, one_dm, mf, occs, energies, maxstep=step, verbose=verbose
@@ -637,7 +637,7 @@ def calc_moe_gradients_np(
                 rtol=1e-4,
                 atol=1e-6,
             ):
-                return grads1
+                return np.asarray(grads1)
             else:
                 grads2 = calc_moe_gradients_i6p(
                     mole, one_dm, mf, occs, energies, maxstep=step, verbose=verbose
@@ -645,7 +645,7 @@ def calc_moe_gradients_np(
                 if np.allclose(
                     np.asarray(grads1), np.asarray(grads2), rtol=1e-4, atol=1e-6
                 ):
-                    return grads2
+                    return np.asarray(grads2)
         if verbose > 2:
             print("Initial step size decreased.")
     raise moegerror("MO energy gradients could not be converged.")
