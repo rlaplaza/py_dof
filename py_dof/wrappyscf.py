@@ -105,7 +105,7 @@ def project(basis_2, basis_1):
     assert np.allclose(
         coeff_2_proj @ s_1 @ np.linalg.inv(coeff_2_proj), s_2, rtol=1e-8, atol=1e-6
     )
-    return coeff_2_proj, s_2, s_1
+    return np.around(coeff_2_proj, 6), s_2, s_1
 
 
 def topyscf(mol, verb_lvl=0):
