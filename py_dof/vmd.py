@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 
 def _vmd_script_start():
@@ -37,10 +38,11 @@ def _vmd_script_molecule(mole, filename="molecule.xyz"):
     Returns
     -------
     Part of the VMD script that constructs the molecule
+
     Raises
     ------
     ValueError
-        If no files are given
+        If no coordinates are given.
     TypeError
         If not fed a molecule object file. 
     """
@@ -73,8 +75,55 @@ def _vmd_script_molecule(mole, filename="molecule.xyz"):
     return output
 
 
+def _vmd_script_vectors(mole, grads, colorid, scalex):
+    """Generate part of the VMD script that prints gradients as vectors
+    for the visualization of your gradients on top of your molecule.
+
+    Parameters
+    ----------
+    mole :
+        PySCF molecule object. Will be translated to xyz format,
+        and written, so that it can be used.
+    grads :
+        Gradients in the PySCF format, either nucleear gradients or
+        gradients per one MO.
+    colorid :
+        Color ID in VMD for the vector arrows. 
+    scalex :
+        Multiplication factor for the vectors. 
+    Returns
+    -------
+    Part of the VMD script that prints the vectors.
+   """
+    if not isinstance(grads, np.ndarray):
+        raise TypeError("Grads should be a numpy ndarray object.")
+    natoms = len(mole.atom[0:, 0])
+    origins = mole.atom[0:, 1]
+    endpoints = np.add(origins, grads)
+    output = "# create arrow function\n"
+    output += "proc vmd_draw_arrow {mol start end} {\n"
+    output += "   set middle [vecadd $start [vecscale 0.9 [ vecsub $end $start]]]\n"
+    output += "   graphics $mol cylinder $start $middle radius 0.05 resolution 75 filled yes\n"
+    output += "   graphics $mol cone $middle $end radius 0.075 resolution 75\n"
+    output += "}\n"
+    output += "graphics 0 color {0}\n".format(colorid)
+    output += "#create arrows for each atom\n"
+    for i in range(0, natoms):
+        origin = np.around(origins[i], 4)
+        end = np.around(np.add(origin, scalex * np.asarray(grads[i, :])), 4)
+        output += "draw arrow {{{0} {1} {2}}} {{{3} {4} {5}}}\n".format(
+            origin[0], origin[1], origin[2], end[0], end[1], end[2]
+        )
+    return output
+
+
 def gen_vmd_script(
-    mole, grads, filename="molecule.xyz", scriptname="molecule.vmd", colorid=1
+    mole,
+    grads,
+    filename="molecule.xyz",
+    scriptname="molecule.vmd",
+    colorid=1,
+    scalex=50,
 ):
     """Generates a VMD (Visual Molecular Dynamics) script
     for the visualization of your gradients on top of your molecule.
@@ -93,9 +142,13 @@ def gen_vmd_script(
         Name of the vmd script file.
     colorid :
         Color ID in VMD for the vector arrows. 1 is blue (default)
+    scalex :
+        Multiplication factor for the vectors. Default is 50.
     """
+    if colorid > 15:
+        colorid = 0
     output = _vmd_script_start()
     output += _vmd_script_molecule(mole, filename)
-    # output += _vmd_script_vectors(mole, grads, colorid)
+    output += _vmd_script_vectors(mole, grads, colorid, scalex)
     with open(scriptname, "w") as f:
         f.write(output)
