@@ -99,7 +99,6 @@ def _vmd_script_vectors(mole, grads, colorid, scalex):
         raise TypeError("Grads should be a numpy ndarray object.")
     natoms = len(mole.atom[0:, 0])
     origins = mole.atom[0:, 1]
-    endpoints = np.add(origins, grads)
     output = "# create arrow function\n"
     output += "proc vmd_draw_arrow {mol start end} {\n"
     output += "   set middle [vecadd $start [vecscale 0.9 [ vecsub $end $start]]]\n"
