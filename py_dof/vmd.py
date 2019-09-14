@@ -109,7 +109,7 @@ def _vmd_script_vectors(mole, grads, colorid, scalex):
     output += "#create arrows for each atom\n"
     for i in range(0, natoms):
         origin = np.around(origins[i], 4)
-        end = np.around(np.add(origin, scalex * np.asarray(grads[i, :])), 4)
+        end = np.around(np.add(origin, (-1) * scalex * np.asarray(grads[i, :])), 4)
         output += "draw arrow {{{0} {1} {2}}} {{{3} {4} {5}}}\n".format(
             origin[0], origin[1], origin[2], end[0], end[1], end[2]
         )
@@ -122,7 +122,7 @@ def gen_vmd_script(
     filename="molecule.xyz",
     scriptname="molecule.vmd",
     colorid=1,
-    scalex=50,
+    scalex=10,
 ):
     """Generates a VMD (Visual Molecular Dynamics) script
     for the visualization of your gradients on top of your molecule.
